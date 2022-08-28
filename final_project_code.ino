@@ -29,13 +29,13 @@ LiquidCrystal_I2C lcd (0x27, 20,4);  //
 #define BMP_MOSI (11)
 #define BMP_CS   (10)
 
-
+float sensorVa=0;
 Adafruit_BMP280 bmp; // I2C
 //bmp end
 // You  get Auth Token in the Blynk App.
 // Go to the Project Settings (nut icon).
 
-
+int value=1700;
 
 char auth[] =BLYNK_AUTH_TOKEN;
 
@@ -69,44 +69,61 @@ void setupBmp(){
   }
 BLYNK_WRITE(V10)
 {
-  String value = param.asStr();
+  String val = param.asStr();
   lcd.clear();
 
+  lcd. print ( val);
+delay(5000);
+}
+BLYNK_WRITE(V11)
+{
+   value = param.asInt();
+   lcd.clear();
+
   lcd. print ( value);
+  
   delay(5000);
+}
+void WRITE2(){
+  sensorVa= analogRead(34); // read analog input pin 0
+  Serial.println(sensorVa);
+  if(sensorVa > value)
+  {
+    digitalWrite(18,1);
+  }else{
+    digitalWrite(18,0);
+    }
+     String smoke="Gas:"+ String(sensorVa );
+    Blynk.virtualWrite(V2, smoke);
+    delay(1000);  
+//     Blynk.virtualWrite(V2, smoke);
 }
 void setup()
 {
-  
+ 
   Serial.begin(9600);
 //  analogRead(pin);
   Blynk.begin(auth, ssid, pass);
 //  mq2.begin();
   setupBmp();
-  pinMode(MQ2pin,INPUT);
-  pinMode(buzzer,OUTPUT);
-  
+  pinMode(34,INPUT);
+  pinMode(18,OUTPUT);
+  WRITE2();
 }
 
 void loop()
 {
+  WRITE2();  
+  
   Blynk.run();
-   float sensorVa= analogRead(MQ2pin); // read analog input pin 0
-  
-  if(sensorVa > 300)
-  {
-    digitalWrite(buzzer,1);
-  }else{
-    digitalWrite(buzzer,0);
-    }
-  
+
   
 //  Serial.println(123);
   
-  delay(1000);
-  String tempreture="temp:"+ String(bmp.readTemperature())+"*C";
+//  delay(1000);
+  String tempreture="Temp:"+ String(bmp.readTemperature())+"*C";
   String Humidity="Humidity:"+ String(bmp.readAltitude(1013.25)/5)+"%";
-  String air="pressure:"+ String(bmp.readPressure() )+"Pa";
+  String air="pressure:"+ String(bmp.readPressure()/10 )+"Pa";
   String smoke="Somke:"+ String(sensorVa );
 //
 //  String lpg="lpg:"+ String(mq2.readLPG())+"*C";
@@ -119,7 +136,7 @@ void loop()
   Blynk.virtualWrite(V0,tempreture);
   Blynk.virtualWrite(V1, Humidity);
   Blynk.virtualWrite(V3, air);
-  Blynk.virtualWrite(V2, smoke);
+//  Blynk.virtualWrite(V2, smoke);
 //  lcd display
   lcd.clear();
   lcd. setCursor (0, 0);
